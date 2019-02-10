@@ -1,0 +1,7 @@
+[GISMETEO]
+TOKEN = ************  # gismeteo api token
+
+
+[FILES]
+AZS_COORDINATES = azs_coordinates.xlsx  # входящий файл с координатами АЗС
+WEATHER_RESULT = data.json  # исходящий файл в формате json
