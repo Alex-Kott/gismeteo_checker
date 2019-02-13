@@ -3,3 +3,7 @@ venv/
 config.ini
 __pycache__/
 info.log
+object_code.txt
+data.json
+default.log
+store/*

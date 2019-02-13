@@ -1,7 +1,17 @@
-[GISMETEO]
-TOKEN = ************  # gismeteo api token
+[GENERAL]
+LOG_FILE = default.log
 
 
-[FILES]
-AZS_COORDINATES = azs_coordinates.xlsx  # входящий файл с координатами АЗС
-WEATHER_RESULT = data.json  # исходящий файл в формате json
+[MASTER]
+GISMETEO_TOKEN = *************
+AZS_COORDINATES_FILE = azs_coordinates.xlsx
+WEATHER_RESULT_FILE = data.json
+STORE = ./store
+
+
+[SLAVE]
+OBJECT_CODE_FILE = object_code.txt
+# if this parameter omitted file will be saved with name '<object_code>.json', i.e. 10011.json
+OBJECT_DATA_FILE = object_data.json
+# Store with all files on master device.  Should end with slash (/)
+MASTER_STORE_URL = http://localhost:8080/store/

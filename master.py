@@ -4,6 +4,7 @@ import asyncio
 import logging
 from asyncio import sleep
 from configparser import ConfigParser
+from pathlib import Path
 from typing import Tuple, Union
 from datetime import datetime
 
@@ -17,13 +18,13 @@ config.read('config.ini')
 logging.basicConfig(level=logging.ERROR,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename=config['FILES']['LOGS'])
+                    filename=config['GENERAL']['LOG_FILE'])
 logger = logging.getLogger('gismeteo_checker')
 logger.setLevel(logging.INFO)
 
 
 def parse_input_file() -> pd.DataFrame:
-    df = pd.read_excel(config['FILES']['AZS_COORDINATES'])
+    df = pd.read_excel(config['MASTER']['AZS_COORDINATES_FILE'])
     df = df.dropna(subset=['Координаты СШ', 'Координаты ВД'])
 
     return df.set_index('№ АЗС:')
@@ -31,10 +32,10 @@ def parse_input_file() -> pd.DataFrame:
 
 def interpret_precipitation_type(type_code: int) -> str:
     precipitation_types = {
-        0: 'Нет осадков',
-        1: 'Дождь',
-        2: 'Снег',
-        3: 'Смешанные осадки',
+        0: 'No precipitation',
+        1: 'Rain',
+        2: 'Snow',
+        3: 'Mixed precipitation',
     }
     return precipitation_types[type_code]
 
@@ -42,9 +43,9 @@ def interpret_precipitation_type(type_code: int) -> str:
 def interpret_precipitation_intensity(intensity_code: int) -> str:
     precipitation_intensity = {
         0: '-',
-        1: 'Небольшой дождь / снег',
-        2: 'Дождь / снег',
-        3: 'Сильный дождь / снег'
+        1: 'Light rain / snow',
+        2: 'Rain / snow',
+        3: 'Heavy rain / snow'
     }
 
     return precipitation_intensity[intensity_code]
@@ -57,7 +58,7 @@ async def request_gismeteo(latitude: float, longitude: float):
         'longitude': str(longitude)
     }
     headers = {
-        'X-Gismeteo-Token': config['GISMETEO']['TOKEN'],
+        'X-Gismeteo-Token': config['MASTER']['GISMETEO_TOKEN'],
         'Accept-Encoding': 'deflate,gzip'
     }
     async with ClientSession() as session:
@@ -67,30 +68,36 @@ async def request_gismeteo(latitude: float, longitude: float):
             return data['response']
 
 
-def save_weather_status(index, temperature, precipitation_type, precipitation_intensity):
+def save_weather_status(index: int, temperature: Union[int, float],
+                        precipitation_type: str, precipitation_intensity: str):
     try:
-        with open(config['FILES']['WEATHER_RESULT']) as file:
+        with open(config['MASTER']['WEATHER_RESULT_FILE']) as file:
             json_data = json.load(file)
     except FileNotFoundError:
-        json_data = []
+        json_data = {}
     except JSONDecodeError:
-        json_data = []
+        json_data = {}
 
-    json_data.append({
-        'azs_index': index,
-        'Дата': datetime.now().isoformat(),
-        'Температура': temperature,
-        'Тип осадков': precipitation_type,
-        'Интенсивность': precipitation_intensity
-    })
+    json_data[index] = {
+        'index': index,
+        'date': datetime.now().isoformat(),
+        'temperature': temperature,
+        'precipitation type': precipitation_type,
+        'precipitation intensity': precipitation_intensity
+    }
 
     try:
-        with open(config['FILES']['WEATHER_RESULT'], 'w') as file:
+        with open(config['MASTER']['WEATHER_RESULT_FILE'], 'w') as file:
             json.dump(json_data, file)
-            logger.info(f'Сохранили данные об АЗС №{index}')
+
+        store_path = Path(config['MASTER']['STORE']) / f'{index}.json'
+        with open(store_path, 'w') as file:
+            json.dump(json_data[index], file)
+
+        logger.info(f'Gas station №{index} data saved')
     except Exception as e:
         logger.exception(e)
-        logger.info(f'Не удалось сохранить данные об АЗС №{index}')
+        logger.info(f'Gas station №{index} data saving canceled')
 
 
 async def get_current_weather(latitude: float, longitude: float) -> Tuple[Union[int, float], str, str]:
@@ -104,24 +111,25 @@ async def get_current_weather(latitude: float, longitude: float) -> Tuple[Union[
 
 
 async def main():
-    logger.info('Запуск...')
+    logger.info('Start...')
     azs_coordinates = parse_input_file()
-    logger.info('Файл с координатами загружен')
+    logger.info('Coordinates file loaded')
 
-    logger.info('Начинаю обработку...')
+    logger.info('Start processing...')
     for index, row in azs_coordinates.iterrows():
         await sleep(0.3)
-        logger.info(f'Запрос информации об АЗС №{index}')
-        tempretature, \
+        logger.info(f'Request info for gas station №{index}')
+        temperature, \
         precipitation_type, \
         precipitation_intensity = await get_current_weather(latitude=row['Координаты СШ'],
                                                             longitude=row['Координаты ВД'])
 
-        logger.info(f'Получена информация об АЗС №{index}. Температура: {tempretature}, тип осадков: {precipitation_type}, интенсивность: {precipitation_intensity} ')
+        logger.info(f'Gas station №{index}. Temperature: {temperature}, '
+                    f'precipitation type: {precipitation_type}, intensity: {precipitation_intensity} ')
 
-        save_weather_status(index, tempretature, precipitation_type, precipitation_intensity)
+        save_weather_status(index, temperature, precipitation_type, precipitation_intensity)
 
-    logger.info('Все данные получены')
+    logger.info('Completed')
 
 
 if __name__ == "__main__":
