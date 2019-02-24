@@ -1,20 +1,29 @@
 import json
 import asyncio
 import logging
+import sys
 from configparser import ConfigParser
 from typing import Union, Dict
+import traceback
 
 from aiohttp import ClientSession
+from aiohttp.client import ContentTypeError
 
-config = ConfigParser(comment_prefixes='#')
-config.read('config.ini')
+try:
+    config = ConfigParser(comment_prefixes='#')
+    config.read('config.ini')
 
-logging.basicConfig(level=logging.ERROR,
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    datefmt='%m-%d %H:%M',
-                    filename=config['GENERAL']['LOG_FILE'])
-logger = logging.getLogger('gismeteo_checker')
-logger.setLevel(logging.INFO)
+    logging.basicConfig(level=logging.ERROR,
+                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                        datefmt='%m-%d %H:%M',
+                        filename=config['GENERAL']['LOG_FILE'])
+    logger = logging.getLogger('gismeteo_checker')
+    logger.setLevel(logging.INFO)
+except Exception as e:
+    with open('default.log', 'a') as file:
+        ex_type, ex, tb = sys.exc_info()
+        traceback.print_tb(tb, file=file)
+        raise e
 
 
 def get_object_code() -> int:
@@ -29,8 +38,12 @@ async def get_object_data(object_code: Union[str, int]) -> Dict:
 
     async with ClientSession() as session:
         async with session.get(file_uri) as response:
-
-            return await response.json()
+            try:
+                return await response.json()
+            except ContentTypeError as exception:
+                logger.exception('Bad response. Server says:')
+                logger.error(await response.text())
+                raise exception
 
 
 def save_object_data(object_data: Dict) -> None:
