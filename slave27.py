@@ -1,28 +1,33 @@
 import json
 import logging
-import ConfigParser
+# import ConfigParser
 
 import requests as req
 
-config = ConfigParser.ConfigParser()
-config.read('config.ini')
+# config = ConfigParser.ConfigParser()
+# config.read('config.ini')
+
+LOG_FILE = 'default.log'
+OBJECT_CODE_FILE = 'object_code.txt'
+MASTER_STORE_URL = 'http://localhost:8080/store/'
+OBJECT_DATA_FILE = 'object_data.json'
 
 logging.basicConfig(level=logging.ERROR,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename=config.get('GENERAL', 'LOG_FILE'))
+                    filename=LOG_FILE)
 logger = logging.getLogger('gismeteo_checker')
 logger.setLevel(logging.INFO)
 
 
 def get_object_code():
-    with open(config.get('SLAVE', 'OBJECT_CODE_FILE')) as file:
+    with open(OBJECT_CODE_FILE) as file:
 
         return int(file.read())
 
 
 def get_object_data(object_code):
-    file_uri = "{}{}.json".format(config.get('SLAVE', 'MASTER_STORE_URL'), object_code)
+    file_uri = "{}{}.json".format(MASTER_STORE_URL, object_code)
     logger.info("File URI: {}".format(file_uri))
 
     r = req.get(file_uri)
@@ -36,8 +41,8 @@ def get_object_data(object_code):
 
 
 def save_object_data(object_data):
-    if config.get('SLAVE', 'OBJECT_DATA_FILE'):
-        data_file_name = config.get('SLAVE', 'OBJECT_DATA_FILE')
+    if OBJECT_DATA_FILE:
+        data_file_name = OBJECT_DATA_FILE
     else:
         data_file_name = "{}.json".format(object_data['index'])
 
