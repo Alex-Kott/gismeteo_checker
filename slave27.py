@@ -1,6 +1,7 @@
 import json
 import logging
 # import ConfigParser
+import sys
 
 import requests as req
 
@@ -12,12 +13,16 @@ OBJECT_CODE_FILE = 'object_code.txt'
 MASTER_STORE_URL = 'http://localhost:8080/store/'
 OBJECT_DATA_FILE = 'object_data.json'
 
-logging.basicConfig(level=logging.ERROR,
+logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
                     filename=LOG_FILE)
 logger = logging.getLogger('gismeteo_checker')
 logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter('%(asctime)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 def get_object_code():
