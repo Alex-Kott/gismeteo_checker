@@ -63,9 +63,13 @@ async def request_gismeteo(latitude: float, longitude: float):
     }
     async with ClientSession() as session:
         async with session.get(api_url, params=params, headers=headers) as response:
-            data = await response.json()
-
-            return data['response']
+            if response.status == 200:
+                data = await response.json()
+                return data['response']
+            else:
+                connection_status = f"Response HTTP code: {response.status}"
+                logger.error(connection_status)
+                raise Exception(connection_status)
 
 
 def save_weather_status(index: int, temperature: Union[int, float],
