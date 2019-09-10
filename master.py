@@ -94,8 +94,13 @@ def save_weather_status(index: int, temperature: Union[int, float],
         with open(config['MASTER']['WEATHER_RESULT_FILE'], 'w') as file:
             json.dump(json_data, file)
 
-        store_path = Path(config['MASTER']['STORE']) / f'{index}.json'
-        with open(store_path, 'w') as file:
+        store_path = Path(config['MASTER']['STORE'])
+
+        if not store_path.exists():
+            store_path.mkdir()
+
+        file_path = store_path / f'{index}.json'
+        with open(file_path, 'w') as file:
             json.dump(json_data[index], file)
 
         logger.info(f'Gas station №{index} data saved')
