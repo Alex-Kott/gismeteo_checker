@@ -1,4 +1,5 @@
 import json
+import sys
 from json.decoder import JSONDecodeError
 import asyncio
 import logging
@@ -12,19 +13,22 @@ import pandas as pd
 
 from aiohttp import ClientSession
 
+exec_path = Path(sys.argv[0])
+script_path = exec_path.parent
+
 config = ConfigParser(comment_prefixes='#')
-config.read('config.ini')
+config.read(script_path / 'config.ini')
 
 logging.basicConfig(level=logging.ERROR,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename=config['GENERAL']['LOG_FILE'])
+                    filename=script_path / config['GENERAL']['LOG_FILE'])
 logger = logging.getLogger('gismeteo_checker')
 logger.setLevel(logging.INFO)
 
 
 def parse_input_file() -> pd.DataFrame:
-    df = pd.read_excel(config['MASTER']['AZS_COORDINATES_FILE'])
+    df = pd.read_excel(script_path / config['MASTER']['AZS_COORDINATES_FILE'])
     df = df.dropna(subset=['Координаты СШ', 'Координаты ВД'])
 
     return df.set_index('№ АЗС:')
@@ -100,7 +104,7 @@ def save_weather_status(index: int, temperature: Union[int, float],
             store_path.mkdir()
 
         file_path = store_path / f'{index}.json'
-        with open(file_path, 'w') as file:
+        with open(script_path / file_path, 'w') as file:
             json.dump(json_data[index], file)
 
         logger.info(f'Gas station №{index} data saved')

@@ -3,20 +3,25 @@ import asyncio
 import logging
 import sys
 from configparser import ConfigParser
+from pathlib import Path
 from typing import Union, Dict
 import traceback
 
 from aiohttp import ClientSession
 from aiohttp.client import ContentTypeError
 
+
+exec_path = Path(sys.argv[0])
+script_path = exec_path.parent
+
 try:
     config = ConfigParser(comment_prefixes='#')
-    config.read('config.ini')
+    config.read(script_path / 'config.ini')
 
     logging.basicConfig(level=logging.ERROR,
                         format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                         datefmt='%m-%d %H:%M',
-                        filename=config['GENERAL']['LOG_FILE'])
+                        filename=script_path / config['GENERAL']['LOG_FILE'])
     logger = logging.getLogger('gismeteo_checker')
     logger.setLevel(logging.INFO)
 except Exception as e:
@@ -27,7 +32,7 @@ except Exception as e:
 
 
 def get_object_code() -> int:
-    with open(config['SLAVE']['OBJECT_CODE_FILE']) as file:
+    with open(script_path / config['SLAVE']['OBJECT_CODE_FILE']) as file:
 
         return int(file.read())
 
@@ -48,9 +53,9 @@ async def get_object_data(object_code: Union[str, int]) -> Dict:
 
 def save_object_data(object_data: Dict) -> None:
     if config['SLAVE'].get('OBJECT_DATA_FILE'):
-        data_file_name = config['SLAVE']['OBJECT_DATA_FILE']
+        data_file_name = script_path / config['SLAVE']['OBJECT_DATA_FILE']
     else:
-        data_file_name = f"{object_data['index']}.json"
+        data_file_name = script_path / f"{object_data['index']}.json"
 
     with open(data_file_name, 'w') as file:
         json.dump(object_data, file)
