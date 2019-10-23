@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['slave.py'],
-             pathex=['C:\\Users\\alexkott\\Documents\\YouDo\\gismeteo_checker'],
+             pathex=['venv/Lib/site-packages/peewee.py', 'C:\\Users\\alexkott\\Documents\\YouDo\\gismeteo_checker'],
              binaries=[],
              datas=[],
              hiddenimports=[],

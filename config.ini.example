@@ -15,3 +15,9 @@ OBJECT_CODE_FILE = object_code.txt
 OBJECT_DATA_FILE = object_data.json
 # Store with all files on master device.  Should end with slash (/)
 MASTER_STORE_URL = http://localhost:8080/store/
+
+[PROXY]
+HOST = 'example.com'
+PORT = 80
+LOGIN = 'login'
+PASS = 'pass'

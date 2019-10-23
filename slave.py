@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Union, Dict
 import traceback
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, BasicAuth
 from aiohttp.client import ContentTypeError
 
 
@@ -37,12 +37,35 @@ def get_object_code() -> int:
         return int(file.read())
 
 
+def get_proxy():
+    proxy = None
+    proxy_auth = None
+
+    try:
+        if not config['PROXY']:
+            return proxy, proxy_auth
+
+        proxy = f"{config['PROXY']['HOST']}:{config['PROXY']['PORT']}"
+
+        if not config['PROXY']['LOGIN']:
+            return proxy, proxy_auth
+
+        proxy_auth = BasicAuth(config['PROXY']['LOGIN'], config['PROXY']['PASS'])
+    except KeyError:
+        logger.warning('There is no proxy')
+
+    return proxy, proxy_auth
+
+
 async def get_object_data(object_code: Union[str, int]) -> Dict:
     file_uri = f"{config['SLAVE']['MASTER_STORE_URL']}{object_code}.json"
     logger.info(f"File URI: {file_uri}")
 
     async with ClientSession() as session:
-        async with session.get(file_uri) as response:
+        proxy, proxy_auth = get_proxy()
+        async with session.get(file_uri,
+                               proxy=proxy,
+                               proxy_auth=proxy_auth) as response:
             try:
                 return await response.json()
             except ContentTypeError as exception:

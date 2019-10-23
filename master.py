@@ -13,6 +13,8 @@ import pandas as pd
 
 from aiohttp import ClientSession
 
+from slave import get_proxy
+
 exec_path = Path(sys.argv[0])
 script_path = exec_path.parent
 
@@ -65,8 +67,10 @@ async def request_gismeteo(latitude: float, longitude: float):
         'X-Gismeteo-Token': config['MASTER']['GISMETEO_TOKEN'],
         'Accept-Encoding': 'deflate,gzip'
     }
+
+    proxy, proxy_auth = get_proxy()
     async with ClientSession() as session:
-        async with session.get(api_url, params=params, headers=headers) as response:
+        async with session.get(api_url, params=params, headers=headers, proxy=proxy, proxy_auth=proxy_auth) as response:
             if response.status == 200:
                 data = await response.json()
                 return data['response']
